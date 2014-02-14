@@ -11,6 +11,8 @@
  *
  */
 
+#define AES_NI
+
 #ifndef HASH_API_H
 #define HASH_API_H
 

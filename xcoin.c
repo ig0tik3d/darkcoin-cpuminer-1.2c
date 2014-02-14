@@ -16,7 +16,14 @@
 //-----simd vect128---------
 #include "x5/vect128/nist.h"
 //-----------
-#include "x5/sph_echo.h"
+
+
+
+#include "x5/echo512/ccalik/aesni/hash_api.h"
+
+
+
+
 //----
 #include "x6/blake.c"
 #include "x6/bmw.c"
@@ -44,7 +51,7 @@
 typedef struct {
 	sph_shavite512_context  shavite1;
 	//sph_simd512_context		simd1;
-	sph_echo512_context		echo1;
+	hashState_echo		echo1;
 } Xhash_context_holder;
 
 Xhash_context_holder base_contexts;
@@ -62,7 +69,7 @@ void init_Xhash_contexts()
   //---simd---
   //sph_simd512_init(&base_contexts.simd1); 
   //--------------
-  sph_echo512_init(&base_contexts.echo1);
+  init_echo(&base_contexts.echo1, 512);
 }
 
 inline void Xhash(void *state, const void *input)
@@ -150,8 +157,8 @@ hashState_sd *     ctx_simd1;
 	free(ctx_simd1->A);
 	free(ctx_simd1);
 	//---echo---
-	sph_echo512 (&ctx.echo1, hashB, 64);   
-    sph_echo512_close(&ctx.echo1, hashA); 
+	update_echo (&ctx.echo1,(const BitSequence *) hashB, 512);   
+	final_echo(&ctx.echo1, (BitSequence *) hashA); 
  
     memcpy(state, hashA, 32);
 }

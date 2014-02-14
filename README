@@ -1,5 +1,16 @@
 License: GPLv2.  See COPYING for details.
 
+Forked form ig0tik3d version, this uses a different algo for echo algorithm
+This version compiles only on CPU supporting the AES-NI instruction set.
+
+If building from git repo:
+chmod +x autogen.sh
+./autogen.sh
+./configure CFLAGS="-O3 -march=native"                    # march=native mandatory, for compile on AES-NI processors 
+or
+./configure CFLAGS="-O3 -msse2 -msse3 -mssse3 -maes -mavx # If you want to compile on a different machine, use 
+make
+
 Poolers original README:
 
 Downloads:  https://sourceforge.net/projects/cpuminer/files/

@@ -16,14 +16,16 @@
 //-----------
 
 
-
+#ifdef AES_NI
 #include "x5/echo512/ccalik/aesni/hash_api.h"
-
-
+#else
+#include "x5/sph_echo.h"
+#endif
 
 
 //----
-#include "x6/blake.c"
+//#include "x6/blake.c"
+#include "x6/blake/hash.h
 #include "x6/bmw.c"
 #include "x6/keccak.c"
 #include "x6/skein.c"
@@ -46,14 +48,23 @@
       #define DATA_ALIGN16(x) __declspec(align(16)) x
 #endif
 
+#ifdef AES_NI
 typedef struct {
 	sph_shavite512_context  shavite1;
 	//sph_simd512_context		simd1;
 	hashState_echo		echo1;
+	hashState_blake	blake1;
 } Xhash_context_holder;
-
+#else
+typedef struct {
+	sph_shavite512_context  shavite1;
+	//sph_simd512_context		simd1;
+	sph_echo512_context		echo1
+	hashState_blake	blake1;
+} Xhash_context_holder;
+#endif
 Xhash_context_holder base_contexts;
-hashState base_context_luffa;
+hashState_luffa base_context_luffa;
 cubehashParam base_context_cubehash;
 
 void init_Xhash_contexts()
@@ -67,13 +78,31 @@ void init_Xhash_contexts()
   //---simd---
   //sph_simd512_init(&base_contexts.simd1); 
   //--------------
+  #ifdef AES_NI
   init_echo(&base_contexts.echo1, 512);
+  #else
+  sph_echo512_init(&base_contexts.echo1);
+  #endif
+  //blake init
+  blake512_init(&base_contexts.blake1);
 }
 
 inline void Xhash(void *state, const void *input)
 {
+	Xhash_context_holder ctx;
+	hashState_luffa			 ctx_luffa;
+	cubehashParam		 ctx_cubehash;
+	//---local simd var ---
+	hashState_sd *     ctx_simd1;
+
+	uint32_t hashA[16], hashB[16];	
+
+	memcpy(&ctx_luffa,&base_context_luffa,sizeof(hashState_luffa));
+	memcpy(&ctx_cubehash,&base_context_cubehash,sizeof(cubehashParam));
+	
+	memcpy(&ctx, &base_contexts, sizeof(base_contexts));
     
-    DATA_ALIGN16(unsigned char hashbuf[128]);
+	DATA_ALIGN16(unsigned char hashbuf[128]);
     DATA_ALIGN16(size_t hashptr);
     DATA_ALIGN16(sph_u64 hashctA);
     DATA_ALIGN16(sph_u64 hashctB);
@@ -88,10 +117,14 @@ inline void Xhash(void *state, const void *input)
     memset(hash, 0, 128);
 // blake1-bmw2-grs3-skein4-jh5-keccak6-luffa7-cubehash8-shavite9-simd10-echo11
 	//---blake1---
-    DECL_BLK;
+	blake512_update(ctx.blake1, input, 64);
+	blake512_final(ctx.blake1, hash);
+ /*   DECL_BLK;
     BLK_I;
     BLK_W;
     BLK_C;
+	 * 
+	 * */
 //---bmw2---
 	DECL_BMW;
 	BMW_I;
@@ -124,16 +157,7 @@ inline void Xhash(void *state, const void *input)
 
  asm volatile ("emms");
  
-Xhash_context_holder ctx;
-hashState			 ctx_luffa;
-cubehashParam		 ctx_cubehash;
-//---local simd var ---
-hashState_sd *     ctx_simd1;
 
- uint32_t hashA[16], hashB[16];	
- memcpy(&ctx, &base_contexts, sizeof(base_contexts));
-	memcpy(&ctx_luffa,&base_context_luffa,sizeof(hashState));
-	memcpy(&ctx_cubehash,&base_context_cubehash,sizeof(cubehashParam));
 		    
     //--- luffa7	
 	update_luffa(&ctx_luffa,(const BitSequence*)hash,512);
@@ -155,8 +179,13 @@ hashState_sd *     ctx_simd1;
 	free(ctx_simd1->A);
 	free(ctx_simd1);
 	//---echo---
+	#ifdef AES_NI
 	update_echo (&ctx.echo1,(const BitSequence *) hashB, 512);   
 	final_echo(&ctx.echo1, (BitSequence *) hashA); 
+	#else
+	sph_echo512 (&ctx.echo1, hashB, 64);
+    sph_echo512_close(&ctx.echo1, hashA); 
+	#endif
  
     memcpy(state, hashA, 32);
 }

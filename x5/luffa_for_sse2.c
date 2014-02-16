@@ -204,19 +204,19 @@
 #define MIXTON1024(r0,r1,r2,r3,s0,s1,s2,s3,p0,p1,p2,p3,q0,q1,q2,q3)\
     NMLTOM1024(r0,r1,r2,r3,s0,s1,s2,s3,p0,p1,p2,p3,q0,q1,q2,q3);
 
-static void Update256(hashState *state, const BitSequence *data, DataLength databitlen);
-static void Update384(hashState *state, const BitSequence *data, DataLength databitlen);
-static void Update512(hashState *state, const BitSequence *data, DataLength databitlen);
-static void rnd256(hashState *state);
-static void rnd384(hashState *state);
-static void rnd512(hashState *state);
-static void finalization224(hashState *state, uint32 *b);
-static void finalization256(hashState *state, uint32 *b);
-static void finalization384(hashState *state, uint32 *b);
-static void finalization512(hashState *state, uint32 *b);
-static void process_last_msgs256(hashState *state);
-static void process_last_msgs384(hashState *state);
-static void process_last_msgs512(hashState *state);
+static void Update256(hashState_luffa *state, const BitSequence *data, DataLength databitlen);
+static void Update384(hashState_luffa *state, const BitSequence *data, DataLength databitlen);
+static void Update512(hashState_luffa *state, const BitSequence *data, DataLength databitlen);
+static void rnd256(hashState_luffa *state);
+static void rnd384(hashState_luffa *state);
+static void rnd512(hashState_luffa *state);
+static void finalization224(hashState_luffa *state, uint32 *b);
+static void finalization256(hashState_luffa *state, uint32 *b);
+static void finalization384(hashState_luffa *state, uint32 *b);
+static void finalization512(hashState_luffa *state, uint32 *b);
+static void process_last_msgs256(hashState_luffa *state);
+static void process_last_msgs384(hashState_luffa *state);
+static void process_last_msgs512(hashState_luffa *state);
 
 /* initial values of chaining variables */
 static const uint32 IV[40] = {
@@ -274,7 +274,7 @@ __m128i MASK;
 
 HashReturn hash_luffa(int hashbitlen, const BitSequence *data, DataLength databitlen, BitSequence *hashval) 
 {
-    hashState state;
+    hashState_luffa state;
     HashReturn ret;
 
     ret = init_luffa(&state, hashbitlen);
@@ -294,7 +294,7 @@ HashReturn hash_luffa(int hashbitlen, const BitSequence *data, DataLength databi
     return SUCCESS;
 }
 
-HashReturn init_luffa(hashState *state, int hashbitlen)
+HashReturn init_luffa(hashState_luffa *state, int hashbitlen)
 {
     int i;
     state->hashbitlen = hashbitlen;
@@ -350,7 +350,7 @@ HashReturn init_luffa(hashState *state, int hashbitlen)
     return SUCCESS;
 }
 
-HashReturn update_luffa(hashState *state, const BitSequence *data, DataLength databitlen)
+HashReturn update_luffa(hashState_luffa *state, const BitSequence *data, DataLength databitlen)
 {
     HashReturn ret=SUCCESS;
 
@@ -373,7 +373,7 @@ HashReturn update_luffa(hashState *state, const BitSequence *data, DataLength da
     return ret;
 }
 
-static void Update256(hashState *state, const BitSequence *data, DataLength databitlen) 
+static void Update256(hashState_luffa *state, const BitSequence *data, DataLength databitlen) 
 {
     uint32 cpylen;
     uint32 len;
@@ -430,7 +430,7 @@ static void Update256(hashState *state, const BitSequence *data, DataLength data
     return;
 }
 
-static void Update384(hashState *state, const BitSequence *data, DataLength databitlen) 
+static void Update384(hashState_luffa *state, const BitSequence *data, DataLength databitlen) 
 {
     uint32 cpylen;
     uint32 len;
@@ -489,7 +489,7 @@ static void Update384(hashState *state, const BitSequence *data, DataLength data
     return;
 }
 
-static void Update512(hashState *state, const BitSequence *data, DataLength databitlen) 
+static void Update512(hashState_luffa *state, const BitSequence *data, DataLength databitlen) 
 {
     uint32 cpylen;
     uint32 len;
@@ -548,7 +548,7 @@ static void Update512(hashState *state, const BitSequence *data, DataLength data
     return;
 }
 
-HashReturn final_luffa(hashState *state, BitSequence *hashval) 
+HashReturn final_luffa(hashState_luffa *state, BitSequence *hashval) 
 {
     HashReturn ret;
 
@@ -585,7 +585,7 @@ HashReturn final_luffa(hashState *state, BitSequence *hashval)
 /***************************************************/
 /* Round function         */
 /* state: hash context    */
-static void rnd256(hashState *state)
+static void rnd256(hashState_luffa *state)
 {
     __m128i t[2];
     __m128i chainv[6];
@@ -653,7 +653,7 @@ static void rnd256(hashState *state)
     return;
 }
 
-static void rnd384(hashState *state)
+static void rnd384(hashState_luffa *state)
 {
     __m128i t[2];
     __m128i chainv[8];
@@ -751,7 +751,7 @@ static void rnd384(hashState *state)
     return;
 }
 
-static void rnd512(hashState *state)
+static void rnd512(hashState_luffa *state)
 {
     __m128i t[2];
     __m128i chainv[10];
@@ -894,7 +894,7 @@ static void rnd512(hashState *state)
 /* Finalization function  */
 /* state: hash context    */
 /* b[8]: hash values      */
-void finalization224(hashState *state, uint32 *b)
+void finalization224(hashState_luffa *state, uint32 *b)
 {
     __m128i t[2];
     uint32 hash[8];
@@ -922,7 +922,7 @@ void finalization224(hashState *state, uint32 *b)
     return;
 }
 
-static void finalization256(hashState *state, uint32 *b)
+static void finalization256(hashState_luffa *state, uint32 *b)
 {
     __m128i t[2];
     uint32 hash[8];
@@ -950,7 +950,7 @@ static void finalization256(hashState *state, uint32 *b)
     return;
 }
 
-static void finalization384(hashState *state, uint32 *b)
+static void finalization384(hashState_luffa *state, uint32 *b)
 {
     __m128i t[2];
     uint32 hash[8];
@@ -994,7 +994,7 @@ static void finalization384(hashState *state, uint32 *b)
     return;
 }
 
-static void finalization512(hashState *state, uint32 *b)
+static void finalization512(hashState_luffa *state, uint32 *b)
 {
     __m128i t[2];
     uint32 hash[8];
@@ -1051,7 +1051,7 @@ static void finalization512(hashState *state, uint32 *b)
 /***************************************************/
 /* Process of the last blocks */
 /* state: hash context        */
-static void process_last_msgs256(hashState *state)
+static void process_last_msgs256(hashState_luffa *state)
 {
     uint32 tail_len;
     int i = 0;
@@ -1079,7 +1079,7 @@ static void process_last_msgs256(hashState *state)
     return;
 }
 
-static void process_last_msgs384(hashState *state)
+static void process_last_msgs384(hashState_luffa *state)
 {
     uint32 tail_len;
     int i = 0;
@@ -1107,7 +1107,7 @@ static void process_last_msgs384(hashState *state)
     return;
 }
 
-static void process_last_msgs512(hashState *state)
+static void process_last_msgs512(hashState_luffa *state)
 {
     uint32 tail_len;
     int i = 0;

@@ -23,6 +23,14 @@ typedef crypto_uint8 u8;
 typedef unsigned long long u64; 
 typedef unsigned int u32; 
 typedef unsigned char u8; 
+
+typedef struct  
+{ 
+	__m128i h[4];
+  u64 s[4], t[2];
+  u32 buflen, nullt;
+  u8 buf[128];
+} hashState_blake __attribute__ ((aligned (64)));
 /*
 #endif
 

@@ -11,8 +11,6 @@
 #include "x5/cubehash_sse2.h" //sse2 opt
 //--------------------------
 #include "x5/sph_shavite.h"
-//-------
-//#include "x5/sph_simd.h"
 //-----simd vect128---------
 #include "x5/vect128/nist.h"
 //-----------

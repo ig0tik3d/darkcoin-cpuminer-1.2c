@@ -2,7 +2,10 @@
 #ifndef DEFS_X5_H__
 #define DEFS_X5_H__
 #include <emmintrin.h>
-#include "nist-api.h"
+typedef unsigned char BitSequence;
+typedef unsigned long long DataLength;
+typedef enum { SUCCESS = 0, FAIL = 1, BAD_HASHBITLEN = 2} HashReturn;
+
 typedef unsigned char uint8;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;

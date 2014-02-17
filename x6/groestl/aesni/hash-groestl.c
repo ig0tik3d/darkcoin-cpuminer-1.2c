@@ -82,7 +82,7 @@ HashReturn_gr init_groestl(hashState_groestl* ctx) {
   /* output size (in bits) must be a positive integer less than or
      equal to 512, and divisible by 8 */
   if (LENGTH <= 0 || (LENGTH%8) || LENGTH > 512)
-    return BAD_HASHBITLEN;
+    return BAD_HASHBITLEN_GR;
 
   /* set number of state columns and state size depending on
      variant */
@@ -102,7 +102,7 @@ HashReturn_gr init_groestl(hashState_groestl* ctx) {
     ctx->buffer[i] = 0;
 
   if (ctx->chaining == NULL || ctx->buffer == NULL)
-    return FAIL;
+    return FAIL_GR;
 
   /* set initial value */
   ctx->chaining[ctx->columns-1] = U64BIG((u64)LENGTH);
@@ -114,7 +114,7 @@ HashReturn_gr init_groestl(hashState_groestl* ctx) {
   ctx->block_counter = 0;
   ctx->bits_in_last_byte = 0;
 
-  return SUCCESS;
+  return SUCCESS_GR;
 }
 
 /* update state with databitlen bits of input */
@@ -127,7 +127,7 @@ HashReturn_gr update_groestl(hashState_groestl* ctx,
 
   /* non-integral number of message bytes can only be supplied in the
      last call to this function */
-  if (ctx->bits_in_last_byte) return FAIL;
+  if (ctx->bits_in_last_byte) return FAIL_GR;
 
   /* if the buffer contains data that has not yet been digested, first
      add data to buffer until full */
@@ -141,7 +141,7 @@ HashReturn_gr update_groestl(hashState_groestl* ctx,
         ctx->bits_in_last_byte = rem;
         ctx->buffer[(int)ctx->buf_ptr++] = input[index];
       }
-      return SUCCESS;
+      return SUCCESS_GR;
     }
 
     /* digest buffer */
@@ -166,7 +166,7 @@ HashReturn_gr update_groestl(hashState_groestl* ctx,
     ctx->bits_in_last_byte = rem;
     ctx->buffer[(int)ctx->buf_ptr++] = input[index];
   }
-  return SUCCESS;
+  return SUCCESS_GR;
 }
 
 #define BILB ctx->bits_in_last_byte
@@ -230,7 +230,7 @@ HashReturn_gr final_groestl(hashState_groestl* ctx,
 //  free(ctx->chaining);
 //  free(ctx->buffer);
 
-  return SUCCESS;
+  return SUCCESS_GR;
 }
 
 /* hash bit sequence */
@@ -242,11 +242,11 @@ HashReturn_gr hash_groestl(int hashbitlen,
   hashState_groestl context;
 
   /* initialise */
-  if ((ret = init_groestl(&context)) != SUCCESS)
+  if ((ret = init_groestl(&context)) != SUCCESS_GR)
     return ret;
 
   /* process message */
-  if ((ret = update_groestl(&context, data, databitlen)) != SUCCESS)
+  if ((ret = update_groestl(&context, data, databitlen)) != SUCCESS_GR)
     return ret;
 
   /* finalise */
@@ -259,7 +259,7 @@ HashReturn_gr hash_groestl(int hashbitlen,
 #ifdef crypto_hash_BYTES
 int crypto_hash(unsigned char *out, const unsigned char *in, unsigned long long inlen)
 {
-  if (hash_groestl(crypto_hash_BYTES * 8, in, inlen * 8,out) == SUCCESS) return 0;
+  if (hash_groestl(crypto_hash_BYTES * 8, in, inlen * 8,out) == SUCCESS_GR) return 0;
   return -1;
 }
 #endif

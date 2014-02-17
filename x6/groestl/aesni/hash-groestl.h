@@ -83,7 +83,7 @@ typedef enum { LONG, SHORT } Var;
 
 typedef unsigned char BitSequence_gr;
 typedef unsigned long long DataLength_gr;
-typedef enum { SUCCESS = 0, FAIL = 1, BAD_HASHLEN = 2 } HashReturn_gr;
+typedef enum { SUCCESS_GR = 0, FAIL_GR = 1, BAD_HASHBITLEN_GR = 2} HashReturn_gr;
 
 typedef struct {
   __attribute__ ((aligned (32))) u64 chaining[SIZE/8];      /* actual state */

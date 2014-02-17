@@ -10,7 +10,7 @@
  * This code is placed in the public domain
  */
 
-#include "hash.h"
+#include "hash-groestl.h"
 
 /* global constants  */
 __attribute__ ((aligned (16))) unsigned char ROUND_CONST_Lx[16];

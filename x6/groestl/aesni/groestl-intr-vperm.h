@@ -11,7 +11,7 @@
  */
 
 #include <tmmintrin.h>
-#include "hash.h"
+#include "hash-groestl.h"
 
 /* global constants  */
 __m128i ROUND_CONST_Lx;

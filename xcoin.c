@@ -25,7 +25,7 @@
 
 //----
 //#include "x6/blake.c"
-#include "x6/blake/sse41/hash.h
+#include "x6/blake/sse41/hash.h"
 #include "x6/bmw.c"
 #include "x6/keccak.c"
 #include "x6/skein.c"
@@ -59,7 +59,7 @@ typedef struct {
 typedef struct {
 	sph_shavite512_context  shavite1;
 	//sph_simd512_context		simd1;
-	sph_echo512_context		echo1
+	sph_echo512_context		echo1;
 	hashState_blake	blake1;
 } Xhash_context_holder;
 #endif

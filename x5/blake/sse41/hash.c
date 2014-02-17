@@ -1,5 +1,5 @@
 
-#include <hash.h>
+#include "hash.h"
 /*
 #ifndef NOT_SUPERCOP
 

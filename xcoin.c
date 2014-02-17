@@ -25,7 +25,7 @@
 
 //----
 //#include "x6/blake.c"
-#include "x6/blake/sse41/hash.h"
+#include "x5/blake/sse41/hash.h"
 #include "x6/bmw.c"
 #include "x6/keccak.c"
 #include "x6/skein.c"

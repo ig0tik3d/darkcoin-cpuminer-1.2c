@@ -82,7 +82,7 @@ HashReturn init_groestl(hashState_groestl* ctx) {
   /* output size (in bits) must be a positive integer less than or
      equal to 512, and divisible by 8 */
   if (LENGTH <= 0 || (LENGTH%8) || LENGTH > 512)
-    return BAD_HASHLEN;
+    return BAD_HASHBITLEN;
 
   /* set number of state columns and state size depending on
      variant */

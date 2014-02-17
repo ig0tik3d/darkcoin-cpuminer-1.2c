@@ -140,14 +140,13 @@ static inline int blake512_compress( hashState_blake * state, const u8 * datablo
   return 0;
 }
 
-static inline void blake512_init( hashState_blake * S, u64 databitlen )
+static inline void blake512_init( hashState_blake * S )
 {
   memset(S, 0, sizeof(hashState_blake));
   S->h[0] = _mm_set_epi64x(0xBB67AE8584CAA73BULL, 0x6A09E667F3BCC908ULL);
   S->h[1] = _mm_set_epi64x(0xA54FF53A5F1D36F1ULL, 0x3C6EF372FE94F82BULL);
   S->h[2] = _mm_set_epi64x(0x9B05688C2B3E6C1FULL, 0x510E527FADE682D1ULL);
   S->h[3] = _mm_set_epi64x(0x5BE0CD19137E2179ULL, 0x1F83D9ABFB41BD6BULL);
-  S->buflen = databitlen;
 }
 
 

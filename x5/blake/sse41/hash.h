@@ -57,7 +57,7 @@ static const u8 padding[129] =
 };
 
 */
-static inline void blake512_init( hashState_blake * S, u64 datalen );
+static inline void blake512_init( hashState_blake * S );
 
 
 static void blake512_update( hashState_blake * S, const u8 * data, u64 datalen ) ;

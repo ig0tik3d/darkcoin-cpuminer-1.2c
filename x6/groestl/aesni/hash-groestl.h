@@ -80,9 +80,7 @@ typedef crypto_uint64 u64;
 typedef enum { LONG, SHORT } Var;
 
 /* NIST API begin */
-typedef unsigned char BitSequence;
-typedef unsigned long long DataLength;
-typedef enum { SUCCESS = 0, FAIL = 1, BAD_HASHLEN = 2 } HashReturn;
+#include "../../../x5/nist-api.h"
 typedef struct {
   __attribute__ ((aligned (32))) u64 chaining[SIZE/8];      /* actual state */
   __attribute__ ((aligned (32))) BitSequence buffer[SIZE];  /* data buffer */

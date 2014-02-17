@@ -60,7 +60,7 @@ typedef struct {
 	sph_shavite512_context  shavite1;
 	//sph_simd512_context		simd1;
 	sph_echo512_context		echo1;
-	hashState_blake	blake1;
+//	hashState_blake	blake1;
 } Xhash_context_holder;
 #endif
 Xhash_context_holder base_contexts;

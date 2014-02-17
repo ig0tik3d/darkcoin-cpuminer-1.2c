@@ -76,7 +76,7 @@ void OutputTransformation(hashState_groestl *ctx) {
 }
 
 /* initialise context */
-HashReturn init_groestl(hashState_groestl* ctx) {
+HashReturn_gr init_groestl(hashState_groestl* ctx) {
   u8 i = 0;
 
   /* output size (in bits) must be a positive integer less than or
@@ -118,9 +118,9 @@ HashReturn init_groestl(hashState_groestl* ctx) {
 }
 
 /* update state with databitlen bits of input */
-HashReturn update_groestl(hashState_groestl* ctx,
-		  const BitSequence* input,
-		  DataLength databitlen) {
+HashReturn_gr update_groestl(hashState_groestl* ctx,
+		  const BitSequence_gr* input,
+		  DataLength_gr databitlen) {
   int index = 0;
   int msglen = (int)(databitlen/8);
   int rem = (int)(databitlen%8);
@@ -173,10 +173,10 @@ HashReturn update_groestl(hashState_groestl* ctx,
 
 /* finalise: process remaining data (including padding), perform
    output transformation, and write hash result to 'output' */
-HashReturn final_groestl(hashState_groestl* ctx,
-		 BitSequence* output) {
+HashReturn_gr final_groestl(hashState_groestl* ctx,
+		 BitSequence_gr* output) {
   int i, j = 0, hashbytelen = LENGTH/8;
-  u8 *s = (BitSequence*)ctx->chaining;
+  u8 *s = (BitSequence_gr*)ctx->chaining;
 
   /* pad with '1'-bit and first few '0'-bits */
   if (BILB) {
@@ -234,11 +234,11 @@ HashReturn final_groestl(hashState_groestl* ctx,
 }
 
 /* hash bit sequence */
-HashReturn hash_groestl(int hashbitlen,
-		const BitSequence* data, 
-		DataLength databitlen,
-		BitSequence* hashval) {
-  HashReturn ret;
+HashReturn_gr hash_groestl(int hashbitlen,
+		const BitSequence_gr* data, 
+		DataLength_gr databitlen,
+		BitSequence_gr* hashval) {
+  HashReturn_gr ret;
   hashState_groestl context;
 
   /* initialise */

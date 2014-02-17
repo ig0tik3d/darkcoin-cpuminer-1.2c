@@ -80,16 +80,14 @@ typedef crypto_uint64 u64;
 typedef enum { LONG, SHORT } Var;
 
 /* NIST API begin */
-<<<<<<< HEAD
-//#include "../../../x5/nist-api.h"
-=======
-typedef unsigned char BitSequence;
-typedef unsigned long long DataLength;
-typedef enum { SUCCESS = 0, FAIL = 1, BAD_HASHLEN = 2 } HashReturn;
->>>>>>> parent of 89113a3... f
+
+typedef unsigned char BitSequence_gr;
+typedef unsigned long long DataLength_gr;
+typedef enum { SUCCESS = 0, FAIL = 1, BAD_HASHLEN = 2 } HashReturn_gr;
+
 typedef struct {
   __attribute__ ((aligned (32))) u64 chaining[SIZE/8];      /* actual state */
-  __attribute__ ((aligned (32))) BitSequence buffer[SIZE];  /* data buffer */
+  __attribute__ ((aligned (32))) BitSequence_gr buffer[SIZE];  /* data buffer */
   u64 block_counter;        /* message block counter */
   int buf_ptr;              /* data buffer pointer */
   int bits_in_last_byte;    /* no. of message bits in last byte of
@@ -99,10 +97,10 @@ typedef struct {
   Var v;                    /* LONG or SHORT */
 } hashState_groestl;
 
-HashReturn init_groestl(hashState_groestl*);
-HashReturn update_groestl(hashState_groestl*, const BitSequence*, DataLength);
-HashReturn final_groestl(hashState_groestl*, BitSequence*);
-HashReturn hash_groestl(int, const BitSequence*, DataLength, BitSequence*);
+HashReturn_gr init_groestl(hashState_groestl*);
+HashReturn_gr update_groestl(hashState_groestl*, const BitSequence_gr*, DataLength_gr);
+HashReturn_gr final_groestl(hashState_groestl*, BitSequence_gr*);
+HashReturn_gr hash_groestl(int, const BitSequence_gr*, DataLength_gr, BitSequence_gr*);
 /* NIST API end   */
 
 #endif /* __hash_h */

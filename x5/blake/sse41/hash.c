@@ -226,7 +226,7 @@ static inline void blake512_final( hashState_blake * S, u8 * digest )
   } while(0);
 }
 
-
+/*
 int crypto_hash( unsigned char *out, const unsigned char *in, unsigned long long inlen ) 
 {
 
@@ -236,7 +236,7 @@ int crypto_hash( unsigned char *out, const unsigned char *in, unsigned long long
   blake512_final( &S, out );
   return 0;
 }
-
+*/
 /*
 #ifdef NOT_SUPERCOP
 

@@ -73,9 +73,9 @@ Xhash_context_holder base_contexts;
 void init_Xhash_contexts()
 {
    //---luffa---
-  init_luffa(&base_context.luffa,512);
+  init_luffa(&base_contexts.luffa,512);
   //--ch sse2---
-  cubehashInit(&base_context.cubehash,512,16,32);
+  cubehashInit(&base_contexts.cubehash,512,16,32);
   //-------
   sph_shavite512_init(&base_contexts.shavite1);
   //---simd---
@@ -83,7 +83,7 @@ void init_Xhash_contexts()
   //--------------
   #ifdef AES_NI
   init_echo(&base_contexts.echo1, 512);
-  init_groestl(&base_contexts.groestl);
+  
   #else
   sph_echo512_init(&base_contexts.echo1);
   #endif
@@ -104,7 +104,7 @@ inline void Xhash(void *state, const void *input)
 //	memcpy(&ctx_cubehash,&base_context_cubehash,sizeof(cubehashParam));
 	
 	memcpy(&ctx, &base_contexts, sizeof(base_contexts));
-    
+    init_groestl(&ctx.groestl);
 	DATA_ALIGN16(unsigned char hashbuf[128]);
     DATA_ALIGN16(size_t hashptr);
     DATA_ALIGN16(sph_u64 hashctA);

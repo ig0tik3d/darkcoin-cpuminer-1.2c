@@ -8,7 +8,7 @@
  */
 
 #include "hash-groestl.h"
-
+#include "../../../x5/nist-api.h"
 /* global constants  */
 __attribute__ ((aligned (16))) unsigned char ROUND_CONST_Lx[16];
 __attribute__ ((aligned (16))) unsigned char ROUND_CONST_L0[ROUNDS512*16];

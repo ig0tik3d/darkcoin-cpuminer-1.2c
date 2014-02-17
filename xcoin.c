@@ -24,8 +24,8 @@
 
 
 //----
-//#include "x6/blake.c"
-#include "x5/blake/sse41/hash.c"
+#include "x6/blake.c"
+//#include "x5/blake/sse41/hash.c"
 #include "x6/bmw.c"
 #include "x6/keccak.c"
 #include "x6/skein.c"
@@ -116,16 +116,16 @@ inline void Xhash(void *state, const void *input)
     memset(hash, 0, 128);
 // blake1-bmw2-grs3-skein4-jh5-keccak6-luffa7-cubehash8-shavite9-simd10-echo11
 	//---blake1---
-	  //blake init
+/*	  //blake init
     blake512_init(&base_contexts.blake1, 512);
 	blake512_update(&ctx.blake1, input, 512);
 	blake512_final(&ctx.blake1, hash);
- /*   DECL_BLK;
+*/
+    DECL_BLK;
     BLK_I;
     BLK_W;
     BLK_C;
-	 * 
-	 * */
+
 //---bmw2---
 	DECL_BMW;
 	BMW_I;

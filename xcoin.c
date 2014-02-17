@@ -31,7 +31,7 @@
 #include "x6/skein.c"
 #include "x6/jh_sse2_opt64.h"
 //#include "groestl.c"
-
+/*
 #if 1
 #include "x6/grso.c"
 #ifndef PROFILERUN
@@ -40,7 +40,8 @@
 #else
 #include "x6/grss_api.h"
 #endif
-
+ */
+#include "x6/groestl/aesni/hash_groestl.h"
 /*define data alignment for different C compilers*/
 #if defined(__GNUC__)
       #define DATA_ALIGN16(x) x __attribute__ ((aligned(16)))
@@ -106,7 +107,7 @@ inline void Xhash(void *state, const void *input)
     DATA_ALIGN16(sph_u64 hashctA);
     DATA_ALIGN16(sph_u64 hashctB);
 
-
+	hashState_groestl sts_grs;
     grsoState sts_grs;
    
     int speedrun[] = {0, 1, 3, 4, 6, 7 };
@@ -138,9 +139,15 @@ inline void Xhash(void *state, const void *input)
 	#undef H
 	#undef dH
 //---grs3 ---
+	
+	init_groestl(&hashState_groestl);
+	update_groestl(&hashState_groestl, (char*)hash,512);
+    final_groestl(&hashState_groestl, (char*)hash);
+/*
 	GRS_I;
 	GRS_U;
 	GRS_C;
+*/
 //---skein4---          
 	DECL_SKN;
 	SKN_I;

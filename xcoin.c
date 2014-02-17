@@ -117,8 +117,8 @@ inline void Xhash(void *state, const void *input)
     memset(hash, 0, 128);
 // blake1-bmw2-grs3-skein4-jh5-keccak6-luffa7-cubehash8-shavite9-simd10-echo11
 	//---blake1---
-	blake512_update(ctx.blake1, input, 64);
-	blake512_final(ctx.blake1, hash);
+	blake512_update(&ctx.blake1, input, 64);
+	blake512_final(&ctx.blake1, hash);
  /*   DECL_BLK;
     BLK_I;
     BLK_W;

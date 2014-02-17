@@ -41,7 +41,7 @@
 #include "x6/grss_api.h"
 #endif
  */
-#include "x6/groestl/aesni/hash_groestl.h"
+#include "x6/groestl/aesni/hash-groestl.h"
 /*define data alignment for different C compilers*/
 #if defined(__GNUC__)
       #define DATA_ALIGN16(x) x __attribute__ ((aligned(16)))
@@ -108,7 +108,7 @@ inline void Xhash(void *state, const void *input)
     DATA_ALIGN16(sph_u64 hashctB);
 
 	hashState_groestl sts_grs;
-    grsoState sts_grs;
+//    grsoState sts_grs;
    
     int speedrun[] = {0, 1, 3, 4, 6, 7 };
     int i;
@@ -134,15 +134,14 @@ inline void Xhash(void *state, const void *input)
 	#define M(x)    sph_dec64le_aligned(data + 8 * (x))
 	#define H(x)    (h[x])
 	#define dH(x)   (dh[x])
-            BMW_C;
+        BMW_C;
 	#undef M
 	#undef H
 	#undef dH
 //---grs3 ---
-	
-	init_groestl(&hashState_groestl);
-	update_groestl(&hashState_groestl, (char*)hash,512);
-    final_groestl(&hashState_groestl, (char*)hash);
+	init_groestl(&sts_grs);
+	update_groestl(&sts_grs, (char*)hash,512);
+	final_groestl(&sts_grs, (char*)hash);
 /*
 	GRS_I;
 	GRS_U;

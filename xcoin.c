@@ -15,11 +15,11 @@
 #include "x5/vect128/nist.h"
 //-----------
 
-
+#define AES_NI
 #ifdef AES_NI
-#include "x5/echo512/ccalik/aesni/hash_api.h"
+	#include "x5/echo512/ccalik/aesni/hash_api.h"
 #else
-#include "x5/sph_echo.h"
+	#include "x5/sph_echo.h"
 #endif
 
 
@@ -54,7 +54,7 @@ typedef struct {
 	sph_shavite512_context  shavite1;
 	//sph_simd512_context		simd1;
 	hashState_echo		echo1;
-	hashState_blake	blake1;
+//	hashState_blake	blake1;
 } Xhash_context_holder;
 #else
 typedef struct {

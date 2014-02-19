@@ -18,8 +18,7 @@
 #include <memory.h>
 #include "hash_api.h"
 #include "vperm.h"
-
-#define AES_NI
+//define in hash_api or defs_x5.h
 #ifdef AES_NI
 #include <wmmintrin.h>
 #else

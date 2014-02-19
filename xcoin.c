@@ -15,7 +15,7 @@
 #include "x5/vect128/nist.h"
 //-----------
 
-#define AES_NI
+//#define AES_NI
 #ifdef AES_NI
 	#include "x5/echo512/ccalik/aesni/hash_api.h"
 #else
@@ -31,7 +31,9 @@
 #include "x6/skein.c"
 #include "x6/jh_sse2_opt64.h"
 //#include "groestl.c"
-/*
+#ifdef AES_NI
+#include "x6/groestl/aesni/hash-groestl.h"
+#else
 #if 1
 #include "x6/grso.c"
 #ifndef PROFILERUN
@@ -40,8 +42,9 @@
 #else
 #include "x6/grss_api.h"
 #endif
- */
-#include "x6/groestl/aesni/hash-groestl.h"
+#endif  //AES-NI
+
+
 /*define data alignment for different C compilers*/
 #if defined(__GNUC__)
       #define DATA_ALIGN16(x) x __attribute__ ((aligned(16)))
@@ -64,6 +67,9 @@ typedef struct {
 	sph_shavite512_context  shavite1;
 	//sph_simd512_context		simd1;
 	sph_echo512_context		echo1;
+	hashState_luffa	luffa;
+//	hashState_groestl groestl;
+	cubehashParam	cubehash;
 //	hashState_blake	blake1;
 } Xhash_context_holder;
 #endif
@@ -83,7 +89,6 @@ void init_Xhash_contexts()
   //--------------
   #ifdef AES_NI
   init_echo(&base_contexts.echo1, 512);
-  
   #else
   sph_echo512_init(&base_contexts.echo1);
   #endif
@@ -104,15 +109,17 @@ inline void Xhash(void *state, const void *input)
 //	memcpy(&ctx_cubehash,&base_context_cubehash,sizeof(cubehashParam));
 	
 	memcpy(&ctx, &base_contexts, sizeof(base_contexts));
-    init_groestl(&ctx.groestl);
+#ifdef AES_NI
+	init_groestl(&ctx.groestl);
+#endif
 	DATA_ALIGN16(unsigned char hashbuf[128]);
-    DATA_ALIGN16(size_t hashptr);
-    DATA_ALIGN16(sph_u64 hashctA);
-    DATA_ALIGN16(sph_u64 hashctB);
+	DATA_ALIGN16(size_t hashptr);
+	DATA_ALIGN16(sph_u64 hashctA);
+	DATA_ALIGN16(sph_u64 hashctB);
 
-	
-//    grsoState sts_grs;
-   
+#ifndef AES_NI
+	grsoState sts_grs;
+#endif   
     int speedrun[] = {0, 1, 3, 4, 6, 7 };
     int i;
     DATA_ALIGN16(unsigned char hash[128]);
@@ -142,13 +149,15 @@ inline void Xhash(void *state, const void *input)
 	#undef H
 	#undef dH
 //---grs3 ---
+	
+#ifdef AES_NI
 	update_groestl(&ctx.groestl, (char*)hash,512);
 	final_groestl(&ctx.groestl, (char*)hash);
-/*
+#else
 	GRS_I;
 	GRS_U;
 	GRS_C;
-*/
+#endif
 //---skein4---          
 	DECL_SKN;
 	SKN_I;

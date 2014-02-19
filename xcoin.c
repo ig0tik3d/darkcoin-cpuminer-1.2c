@@ -170,7 +170,7 @@ inline void Xhash(void *state, const void *input)
 
 //	asm volatile ("emms");
 	//--- luffa7
-	update_luffa(&ctx.luffa,(const BitSequence*)hash,512);
+	update_luffa(&ctx.luffa,(const BitSequence*)hash,640);/////?? booo shares on certain procs?
 	final_luffa(&ctx.luffa,(BitSequence*)hash+64);
 	//---cubehash---
 	cubehashUpdate(&ctx.cubehash,(const byte*) hash+64,64);

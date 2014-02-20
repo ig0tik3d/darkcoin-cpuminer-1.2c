@@ -61,6 +61,7 @@ typedef struct {
 	hashState_groestl groestl;
 	hashState_luffa luffa;
 	cubehashParam cubehash;
+	hashState_sd ctx_simd1;
 //	hashState_blake	blake1;
 } Xhash_context_holder;
 #else
@@ -69,6 +70,7 @@ typedef struct {
 	sph_echo512_context		echo1;
 	hashState_luffa	luffa;
 	cubehashParam	cubehash;
+	hashState_sd ctx_simd1;
 //	hashState_blake	blake1;
 } Xhash_context_holder;
 #endif
@@ -90,17 +92,15 @@ void init_Xhash_contexts(){
 	#else
 	sph_echo512_init(&base_contexts.echo1);
 	#endif
-
+	//---local simd var ---
+	init_sd(&base_contexts.ctx_simd1,512)
 }
 
 inline void Xhash(void *state, const void *input)
 {
 	Xhash_context_holder ctx;
 
-	//---local simd var ---
-	hashState_sd *ctx_simd1;
-	ctx_simd1 = malloc(sizeof(hashState_sd));
-	Init(ctx_simd1,512);
+	;
 
 //	uint32_t hashA[16], hashB[16];
 
@@ -183,11 +183,8 @@ inline void Xhash(void *state, const void *input)
 	//sph_simd512 (&ctx.simd1, hashA, 64);
 	// sph_simd512_close(&ctx.simd1, hashB);
 	//-------simd512 vect128 --------------
-	Update(ctx_simd1,(const BitSequence *)hash+64,512);
-	Final(ctx_simd1,(BitSequence *)hash);
-	free(ctx_simd1->buffer);
-	free(ctx_simd1->A);
-	free(ctx_simd1);
+	update_sd(ctx_simd1,(const BitSequence *)hash+64,512);
+	final_sd(ctx_simd1,(BitSequence *)hash);
 	//---echo---
 	#ifdef AES_NI
 	update_echo (&ctx.echo1,(const BitSequence *) hash, 512);

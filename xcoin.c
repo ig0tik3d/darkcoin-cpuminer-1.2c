@@ -31,7 +31,7 @@
 #include "x6/skein.c"
 #include "x6/jh_sse2_opt64.h"
 //#include "groestl.c"
-#ifdef AES_NI
+#ifndef AES_NI
 #include "x6/groestl/aesni/hash-groestl.h"
 #else
 #if 1
@@ -52,7 +52,7 @@
 #define DATA_ALIGN16(x) __declspec(align(16)) x
 #endif
 
-#ifdef AES_NI
+#ifndef AES_NI
 typedef struct {
 	sph_shavite512_context  shavite1;
 	hashState_echo		echo1;
@@ -64,7 +64,8 @@ typedef struct {
 #else
 typedef struct {
 	sph_shavite512_context  shavite1;
-	sph_echo512_context		echo1;
+//	sph_echo512_context		echo1;
+	hashState_echo	echo1;
 	hashState_luffa	luffa;
 	cubehashParam	cubehash;
 //	hashState_blake	blake1;
@@ -104,7 +105,7 @@ inline void Xhash(void *state, const void *input)
 
 
 	memcpy(&ctx, &base_contexts, sizeof(base_contexts));
-	#ifdef AES_NI
+	#ifndef AES_NI
 	init_groestl(&ctx.groestl);
 	#endif
 
@@ -113,7 +114,7 @@ inline void Xhash(void *state, const void *input)
 	DATA_ALIGN16(sph_u64 hashctA);
 	DATA_ALIGN16(sph_u64 hashctB);
 
-	#ifndef AES_NI
+	#ifdef AES_NI
 	grsoState sts_grs;
 	#endif
 
@@ -146,7 +147,7 @@ inline void Xhash(void *state, const void *input)
 	#undef dH
 	//---grs3----
 
-	#ifdef AES_NI
+	#ifndef AES_NI
 	update_groestl(&ctx.groestl, (char*)hash,512);
 	final_groestl(&ctx.groestl, (char*)hash);
 	#else

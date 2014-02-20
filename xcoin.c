@@ -16,6 +16,8 @@
 //-----------
 
 #define AES_NI
+#define AES_NI_GR
+
 #ifdef AES_NI
 #include "x5/echo512/ccalik/aesni/hash_api.h"
 #else
@@ -31,7 +33,7 @@
 #include "x6/skein.c"
 #include "x6/jh_sse2_opt64.h"
 //#include "groestl.c"
-#ifdef AES_NI
+#ifdef AES_NI_GR
 #include "x6/groestl/aesni/hash-groestl.h"
 #else
 #if 1
@@ -42,7 +44,7 @@
 #else
 #include "x6/grss_api.h"
 #endif
-#endif  //AES-NI
+#endif  //AES-NI_GR
 
 
 /*define data alignment for different C compilers*/
@@ -104,7 +106,7 @@ inline void Xhash(void *state, const void *input)
 
 
 	memcpy(&ctx, &base_contexts, sizeof(base_contexts));
-	#ifdef AES_NI
+	#ifdef AES_NI_GR
 	init_groestl(&ctx.groestl);
 	#endif
 
@@ -113,7 +115,7 @@ inline void Xhash(void *state, const void *input)
 	DATA_ALIGN16(sph_u64 hashctA);
 	DATA_ALIGN16(sph_u64 hashctB);
 
-	#ifndef AES_NI
+	#ifndef AES_NI_GR
 	grsoState sts_grs;
 	#endif
 
@@ -146,7 +148,7 @@ inline void Xhash(void *state, const void *input)
 	#undef dH
 	//---grs3----
 
-	#ifdef AES_NI
+	#ifdef AES_NI_GR
 	update_groestl(&ctx.groestl, (char*)hash,512);
 	final_groestl(&ctx.groestl, (char*)hash);
 	#else

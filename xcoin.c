@@ -93,14 +93,12 @@ void init_Xhash_contexts(){
 	sph_echo512_init(&base_contexts.echo1);
 	#endif
 	//---local simd var ---
-	init_sd(&base_contexts.ctx_simd1,512)
+	init_sd(&base_contexts.ctx_simd1,512);
 }
 
 inline void Xhash(void *state, const void *input)
 {
 	Xhash_context_holder ctx;
-
-	;
 
 //	uint32_t hashA[16], hashB[16];
 
@@ -183,8 +181,8 @@ inline void Xhash(void *state, const void *input)
 	//sph_simd512 (&ctx.simd1, hashA, 64);
 	// sph_simd512_close(&ctx.simd1, hashB);
 	//-------simd512 vect128 --------------
-	update_sd(ctx_simd1,(const BitSequence *)hash+64,512);
-	final_sd(ctx_simd1,(BitSequence *)hash);
+	update_sd(&ctx.ctx_simd1,(const BitSequence *)hash+64,512);
+	final_sd(&ctx.ctx_simd1,(BitSequence *)hash);
 	//---echo---
 	#ifdef AES_NI
 	update_echo (&ctx.echo1,(const BitSequence *) hash, 512);

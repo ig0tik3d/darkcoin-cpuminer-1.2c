@@ -16,7 +16,7 @@
 //-----------
 
 #define AES_NI
-//#define AES_NI_GR
+#define AES_NI_GR
 
 #ifdef AES_NI
 #include "x5/echo512/ccalik/aesni/hash_api.h"

@@ -123,4 +123,174 @@ inline void Xhash(void *state, const void *input)
 	memset(hash, 0, 128);
 	//blake1-bmw2-grs3-skein4-jh5-keccak6-luffa7-cubehash8-shavite9-simd10-echo11
 	//---blake1---
-/*
+/*	  //blake init
+	blake512_init(&base_contexts.blake1, 512);
+	blake512_update(&ctx.blake1, input, 512);
+	blake512_final(&ctx.blake1, hash);
+*/
+	DECL_BLK;
+	BLK_I;
+	BLK_W;
+	BLK_C;
+
+	//---bmw2---
+	DECL_BMW;
+	BMW_I;
+	BMW_U;
+	#define M(x)    sph_dec64le_aligned(data + 8 * (x))
+	#define H(x)    (h[x])
+	#define dH(x)   (dh[x])
+        BMW_C;
+	#undef M
+	#undef H
+	#undef dH
+	//---grs3----
+
+	#ifdef AES_NI_GR
+	update_groestl(&ctx.groestl, (char*)hash,512);
+	final_groestl(&ctx.groestl, (char*)hash);
+	#else
+	GRS_I;
+	GRS_U;
+	GRS_C;
+	#endif
+	//---skein4---
+	DECL_SKN;
+	SKN_I;
+	SKN_U;
+	SKN_C;
+	//---jh5------
+	DECL_JH;
+	JH_H;
+	//---keccak6---
+	DECL_KEC;
+	KEC_I;
+	KEC_U;
+	KEC_C;
+
+//	asm volatile ("emms");
+	//--- luffa7
+	update_luffa(&ctx.luffa,(const BitSequence*)hash,512);
+	final_luffa(&ctx.luffa,(BitSequence*)hash+64);
+	//---cubehash---
+	cubehashUpdate(&ctx.cubehash,(const byte*) hash+64,64);
+	cubehashDigest(&ctx.cubehash,(byte*)hash);
+	//---shavite---
+	sph_shavite512 (&ctx.shavite1, hash, 64);
+	sph_shavite512_close(&ctx.shavite1, hash+64);
+	//sph_simd512 (&ctx.simd1, hashA, 64);
+	// sph_simd512_close(&ctx.simd1, hashB);
+	//-------simd512 vect128 --------------
+	update_sd(&ctx.ctx_simd1,(const BitSequence *)hash+64,512);
+	final_sd(&ctx.ctx_simd1,(BitSequence *)hash);
+	//---echo---
+	#ifdef AES_NI
+	update_echo (&ctx.echo1,(const BitSequence *) hash, 512);
+	final_echo(&ctx.echo1, (BitSequence *) hash+64);
+	#else
+	sph_echo512 (&ctx.echo1, hash, 64);
+	sph_echo512_close(&ctx.echo1, hash+64);
+	#endif
+
+	memcpy(state, hash+64, 32);
+}
+
+int scanhash_X(int thr_id, uint32_t *pdata, const uint32_t *ptarget, uint32_t max_nonce, unsigned long *hashes_done){
+
+	uint32_t n = pdata[19] - 1;
+	const uint32_t first_nonce = pdata[19];
+	const uint32_t Htarg = ptarget[7];
+
+	uint32_t hash64[8] __attribute__((aligned(32)));
+        uint32_t endiandata[32];
+
+
+	int kk=0;
+
+	#pragma unroll
+	for (; kk < 32; kk++){
+		be32enc(&endiandata[kk], ((uint32_t*)pdata)[kk]);
+	};
+        if (ptarget[7]==0) {
+                do {
+                        pdata[19] = ++n;
+                        be32enc(&endiandata[19], n);
+                        Xhash(hash64, &endiandata);
+                        if (((hash64[7]&0xFFFFFFFF)==0) &&
+                                        fulltest(hash64, ptarget)) {
+                                *hashes_done = n - first_nonce + 1;
+                                return true;
+                        }
+                } while (n < max_nonce && !work_restart[thr_id].restart);        
+        }
+        else if (ptarget[7]<=0xF)
+        {
+                do {
+                        pdata[19] = ++n;
+                        be32enc(&endiandata[19], n);
+                        Xhash(hash64, &endiandata);
+                        if (((hash64[7]&0xFFFFFFF0)==0) &&
+                                        fulltest(hash64, ptarget)) {
+                                *hashes_done = n - first_nonce + 1;
+                                return true;
+                        }
+                } while (n < max_nonce && !work_restart[thr_id].restart);        
+        }
+        else if (ptarget[7]<=0xFF)
+        {
+                do {
+                        pdata[19] = ++n;
+                        be32enc(&endiandata[19], n);
+                        Xhash(hash64, &endiandata);
+                        if (((hash64[7]&0xFFFFFF00)==0) &&
+                                        fulltest(hash64, ptarget)) {
+                                *hashes_done = n - first_nonce + 1;
+                                return true;
+                        }
+                } while (n < max_nonce && !work_restart[thr_id].restart);        
+        }
+        else if (ptarget[7]<=0xFFF)
+        {
+                do {
+                        pdata[19] = ++n;
+                        be32enc(&endiandata[19], n);
+                        Xhash(hash64, &endiandata);
+                        if (((hash64[7]&0xFFFFF000)==0) &&
+                                        fulltest(hash64, ptarget)) {
+                                *hashes_done = n - first_nonce + 1;
+                                return true;
+                        }
+                } while (n < max_nonce && !work_restart[thr_id].restart);        
+
+        }
+        else if (ptarget[7]<=0xFFFF)
+        {
+                do {
+                        pdata[19] = ++n;
+                        be32enc(&endiandata[19], n);
+                        Xhash(hash64, &endiandata);
+                        if (((hash64[7]&0xFFFF0000)==0) &&
+                                        fulltest(hash64, ptarget)) {
+                                *hashes_done = n - first_nonce + 1;
+                                return true;
+                        }
+                } while (n < max_nonce && !work_restart[thr_id].restart);        
+
+        }
+        else
+        {
+                do {
+                        pdata[19] = ++n;
+                        be32enc(&endiandata[19], n);
+                        Xhash(hash64, &endiandata);
+                        if (fulltest(hash64, ptarget)) {
+                                *hashes_done = n - first_nonce + 1;
+                                return true;
+                        }
+                } while (n < max_nonce && !work_restart[thr_id].restart);        
+        }
+
+        *hashes_done = n - first_nonce + 1;
+        pdata[19] = n;
+        return 0;
+}

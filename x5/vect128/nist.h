@@ -3,9 +3,9 @@
 
 /*define data alignment for different C compilers*/
 #if defined(__GNUC__)
-#define DATA_ALIGN128(x) x __attribute__((aligned(128)))
+#define DATA_ALIGN(x) x __attribute__((aligned(16)))
 #else
-#define DATA_ALIGN128(x) __declspec(align(128)) x
+#define DATA_ALIGN(x) __declspec(align(16)) x
 #endif
 
 #include "compat.h"
@@ -36,11 +36,11 @@ typedef struct {
   u32 count_high;
 #endif
 
-  DATA_ALIGN128(u32 A[32]);
+  DATA_ALIGN(u32 A[32]);
   u32 *B;
   u32 *C;
   u32 *D;
-  DATA_ALIGN128(unsigned char buffer[128]);
+  DATA_ALIGN(unsigned char buffer[128]);
   
 } hashState_sd;
 

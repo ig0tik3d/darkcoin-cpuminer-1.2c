@@ -49,9 +49,9 @@
 
 /*define data alignment for different C compilers*/
 #if defined(__GNUC__)
-#define DATA_ALIGN16(x) x __attribute__ ((aligned(16)))
+#define DATA_ALIGNXY(x,y) x __attribute__ ((aligned(y)))
 #else
-#define DATA_ALIGN16(x) __declspec(align(16)) x
+#define DATA_ALIGNXY(x,y) __declspec(align(y)) x
 #endif
 
 #ifdef AES_NI
@@ -108,17 +108,17 @@ inline void Xhash(void *state, const void *input)
 	init_groestl(&ctx.groestl);
 	#endif
 
-	DATA_ALIGN16(unsigned char hashbuf[128]);
-	DATA_ALIGN16(size_t hashptr);
-	DATA_ALIGN16(sph_u64 hashctA);
-	DATA_ALIGN16(sph_u64 hashctB);
+	DATA_ALIGNXY(unsigned char hashbuf[128],16);
+	size_t hashptr;
+	DATA_ALIGNXY(sph_u64 hashctA,8);
+	DATA_ALIGNXY(sph_u64 hashctB,8);
 
 	#ifndef AES_NI_GR
 	grsoState sts_grs;
 	#endif
 
 
-	DATA_ALIGN16(unsigned char hash[128]);
+	DATA_ALIGNXY(unsigned char hash[128],16);
 	/* proably not needed */
 	memset(hash, 0, 128);
 	//blake1-bmw2-grs3-skein4-jh5-keccak6-luffa7-cubehash8-shavite9-simd10-echo11

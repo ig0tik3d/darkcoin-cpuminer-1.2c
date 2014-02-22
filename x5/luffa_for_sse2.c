@@ -306,6 +306,7 @@ HashReturn update_luffa(hashState_luffa *state, const BitSequence *data, DataLen
 	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
 	rnd512(state); 
 	data += MSG_BLOCK_BYTE_LEN; 
+	state->rembitlen = 0;
 	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
 	rnd512(state); 
 	data += MSG_BLOCK_BYTE_LEN; 

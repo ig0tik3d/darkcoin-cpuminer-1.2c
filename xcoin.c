@@ -55,6 +55,7 @@
 #endif
 
 #ifdef AES_NI
+#ifdef AES_NI_GR
 typedef struct {
 	sph_shavite512_context  shavite1;
 	hashState_echo		echo1;
@@ -65,12 +66,22 @@ typedef struct {
 //	hashState_blake	blake1;
 } Xhash_context_holder;
 #else
+typedef struct{
+	sph_shavite512_context shavite1;
+	hashState_echo	echo1;
+	hashState_luffa	luffa;
+	cubehashParam cubehash;
+	hashState_sd ctx_simd1;
+} Xhash_context_holder;
+#endif
+#else
 typedef struct {
 	sph_shavite512_context  shavite1;
 	sph_echo512_context		echo1;
 	hashState_luffa	luffa;
 	cubehashParam	cubehash;
 	hashState_sd ctx_simd1;
+	hashState_groestl groestl;
 //	hashState_blake	blake1;
 } Xhash_context_holder;
 #endif

@@ -310,10 +310,8 @@ HashReturn update_luffa(hashState_luffa *state, const BitSequence *data, DataLen
 	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
 	rnd512(state); 
 	data += MSG_BLOCK_BYTE_LEN; 
-//	memset(p+1, 0, 15*sizeof(uint8));
-	i=1;
+	memset(p+1, 0, 31*sizeof(uint8));
 	p[0] = 0x80;
-	for (;i<32;i++) ((uint8*)state->buffer)[i] = 0;
 	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(state->buffer[i]);
     rnd512(state);
     return ret;
@@ -484,7 +482,7 @@ static void finalization512(hashState_luffa *state, uint32 *b)
     int i;
 
     /*---- blank round with m=0 ----*/
-    for (i=0;i<8;i++) state->buffer[i] = 0;
+    memset(state->buffer, 0, sizeof state->buffer );
     rnd512(state);
 
     t[0] = _mm_load_si128(&state->chainv[0]);
@@ -506,7 +504,7 @@ static void finalization512(hashState_luffa *state, uint32 *b)
 
     for (i=0;i<8;i++) b[i] = BYTES_SWAP32(hash[i]);
 
-    for (i=0;i<8;i++) state->buffer[i] = 0;
+    memset(state->buffer, 0, sizeof state->buffer );
     rnd512(state);
 
     t[0] = _mm_load_si128(&state->chainv[0]);

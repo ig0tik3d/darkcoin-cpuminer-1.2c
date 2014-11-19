@@ -1,6 +1,13 @@
 #ifndef __NIST_H__
 #define __NIST_H__
 
+/*define data alignment for different C compilers*/
+#if defined(__GNUC__)
+#define DATA_ALIGN(x) x __attribute__((aligned(16)))
+#else
+#define DATA_ALIGN(x) __declspec(align(16)) x
+#endif
+
 #include "compat.h"
 #include "../defs_x5.h"
 /*
@@ -29,17 +36,21 @@ typedef struct {
   u32 count_high;
 #endif
 
-  u32 *A, *B, *C, *D;
-  unsigned char* buffer;
+  DATA_ALIGN(u32 A[32]);
+  u32 *B;
+  u32 *C;
+  u32 *D;
+  DATA_ALIGN(unsigned char buffer[128]);
+  
 } hashState_sd;
 
 /* 
  * NIST API
  */
 
-HashReturn Init(hashState_sd *state, int hashbitlen);
-HashReturn Update(hashState_sd *state, const BitSequence *data, DataLength databitlen);
-HashReturn Final(hashState_sd *state, BitSequence *hashval);
+HashReturn init_sd(hashState_sd *state, int hashbitlen);
+HashReturn update_sd(hashState_sd *state, const BitSequence *data, DataLength databitlen);
+HashReturn final_sd(hashState_sd *state, BitSequence *hashval);
 //HashReturn Hash(int hashbitlen, const BitSequence *data, DataLength databitlen,
 //                BitSequence *hashval);
 

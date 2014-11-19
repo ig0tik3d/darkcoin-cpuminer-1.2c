@@ -45,8 +45,6 @@
 #define LIMIT_512 128
 /*********************************/
 
-HashReturn init_luffa(hashState *state, int hashbitlen);
-HashReturn update_luffa(hashState *state, const BitSequence *data, DataLength databitlen);
-HashReturn final_luffa(hashState *state, BitSequence *hashval);
-HashReturn hash_luffa(int hashbitlen, const BitSequence *data, DataLength databitlen, BitSequence *hashval);
-int luffa_hash(unsigned char *out, const unsigned char *in, unsigned long long inlen);
+HashReturn init_luffa(hashState_luffa *state, int hashbitlen);
+HashReturn update_luffa(hashState_luffa *state, const BitSequence *data, DataLength databitlen);
+HashReturn final_luffa(hashState_luffa *state, BitSequence *hashval);

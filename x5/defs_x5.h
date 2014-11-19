@@ -16,6 +16,8 @@ typedef struct {
     uint64 bitlen[2]; /* Message length in bits */
     uint32 rembitlen; /* Length of buffer data to be hashed */
     int hashbitlen;
-} hashState;
+} hashState_luffa;
+
+
 typedef unsigned char byte;
 #endif

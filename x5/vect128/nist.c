@@ -35,11 +35,11 @@ HashReturn InitIV(hashState_sd *state, int hashbitlen, const u32 *IV) {
   if (!SupportedLength(hashbitlen))
     return BAD_HASHBITLEN;
 
-  n = (hashbitlen <= 256) ? 4 : 8;
+  n =  8;
 
   state->hashbitlen = hashbitlen;
   state->n_feistels = n;
-  state->blocksize = 128*n;
+  state->blocksize = 128*8;
   
 #ifdef HAS_64
   state->count = 0;
@@ -48,17 +48,17 @@ HashReturn InitIV(hashState_sd *state, int hashbitlen, const u32 *IV) {
   state->count_high = 0;
 #endif  
 
-  state->buffer = malloc(16*n + 16);
+//  state->buffer = malloc(16*n + 16);
   /*
    * Align the buffer to a 128 bit boundary.
    */
-  state->buffer += ((unsigned char*)NULL - state->buffer)&15;
+//  state->buffer += ((unsigned char*)NULL - state->buffer)&15;
 
-  state->A = malloc((4*n+4)*sizeof(u32));
+//  state->A = malloc((4*n+4)*sizeof(u32));
   /*
    * Align the buffer to a 128 bit boundary.
    */
-  state->A += ((u32*)NULL - state->A)&3;
+//  state->A += ((u32*)NULL - state->A)&3;
 
   state->B = state->A+n;
   state->C = state->B+n;
@@ -78,7 +78,7 @@ HashReturn InitIV(hashState_sd *state, int hashbitlen, const u32 *IV) {
 /* 
  * Initialize the hashState_sd.
  */
-HashReturn Init(hashState_sd *state, int hashbitlen) {
+HashReturn init_sd(hashState_sd *state, int hashbitlen) {
   HashReturn r;
   char *init;
 
@@ -116,7 +116,7 @@ HashReturn Init(hashState_sd *state, int hashbitlen) {
 
 
 
-HashReturn Update(hashState_sd *state, const BitSequence *data, DataLength databitlen) {
+HashReturn update_sd(hashState_sd *state, const BitSequence *data, DataLength databitlen) {
   unsigned current;
   unsigned int bs = state->blocksize;
   static int align = -1;
@@ -169,7 +169,7 @@ HashReturn Update(hashState_sd *state, const BitSequence *data, DataLength datab
   return SUCCESS;
 }
 
-HashReturn Final(hashState_sd *state, BitSequence *hashval) {
+HashReturn final_sd(hashState_sd *state, BitSequence *hashval) {
 #ifdef HAS_64
   u64 l;
   int current = state->count & (state->blocksize - 1);

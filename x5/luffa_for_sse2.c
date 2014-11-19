@@ -204,19 +204,13 @@
 #define MIXTON1024(r0,r1,r2,r3,s0,s1,s2,s3,p0,p1,p2,p3,q0,q1,q2,q3)\
     NMLTOM1024(r0,r1,r2,r3,s0,s1,s2,s3,p0,p1,p2,p3,q0,q1,q2,q3);
 
-static void Update256(hashState *state, const BitSequence *data, DataLength databitlen);
-static void Update384(hashState *state, const BitSequence *data, DataLength databitlen);
-static void Update512(hashState *state, const BitSequence *data, DataLength databitlen);
-static void rnd256(hashState *state);
-static void rnd384(hashState *state);
-static void rnd512(hashState *state);
-static void finalization224(hashState *state, uint32 *b);
-static void finalization256(hashState *state, uint32 *b);
-static void finalization384(hashState *state, uint32 *b);
-static void finalization512(hashState *state, uint32 *b);
-static void process_last_msgs256(hashState *state);
-static void process_last_msgs384(hashState *state);
-static void process_last_msgs512(hashState *state);
+
+static void Update512(hashState_luffa *state, const BitSequence *data, DataLength databitlen);
+
+static void rnd512(hashState_luffa *state);
+
+static void finalization512(hashState_luffa *state, uint32 *b);
+
 
 /* initial values of chaining variables */
 static const uint32 IV[40] = {
@@ -272,29 +266,9 @@ __m128i CNS128[32];
 __m128i ALLONE;
 __m128i MASK;
 
-HashReturn hash_luffa(int hashbitlen, const BitSequence *data, DataLength databitlen, BitSequence *hashval) 
-{
-    hashState state;
-    HashReturn ret;
 
-    ret = init_luffa(&state, hashbitlen);
-    if (ret != SUCCESS) {
-        return ret;
-    }
 
-    ret = update_luffa(&state, data, databitlen);
-    if (ret != SUCCESS) {
-        return ret;
-    }
-
-    ret = final_luffa(&state, hashval);
-    if (ret != SUCCESS) {
-        return ret;
-    }
-    return SUCCESS;
-}
-
-HashReturn init_luffa(hashState *state, int hashbitlen)
+HashReturn init_luffa(hashState_luffa *state, int hashbitlen)
 {
     int i;
     state->hashbitlen = hashbitlen;
@@ -310,448 +284,54 @@ HashReturn init_luffa(hashState *state, int hashbitlen)
         CNS128[i] = _mm_loadu_si128((__m128i*)&CNS_INIT[i*4]);
     }
 
-    switch(hashbitlen) {
-        case 224:
-            for (i=0;i<6;i++) {
-                state->chainv[i] = _mm_loadu_si128((__m128i*)&IV[i*4]);
-            }
-            break;
 
-        case 256:
-            for (i=0;i<6;i++) {
-                state->chainv[i] = _mm_loadu_si128((__m128i*)&IV[i*4]);
-            }
-            break;
-
-        case 384:
-            for (i=0;i<8;i++) {
-                state->chainv[i] = _mm_loadu_si128((__m128i*)&IV[i*4]);
-            }
-            break;
-
-        case 512:
-            for (i=0;i<10;i++) {
-                state->chainv[i] = _mm_loadu_si128((__m128i*)&IV[i*4]);
-            }
-            break;
-
-        default:
-            return BAD_HASHBITLEN;
-    }
+	for (i=0;i<10;i++) 
+		state->chainv[i] = _mm_loadu_si128((__m128i*)&IV[i*4]);
+      
 
     state->bitlen[0] = 0;
     state->bitlen[1] = 0;
     state->rembitlen = 0;
 
-    for (i=0;i<8;i++) {
-        state->buffer[i] = 0;
-    }
+    memset(state->buffer, 0, sizeof state->buffer );
 
     return SUCCESS;
 }
 
-HashReturn update_luffa(hashState *state, const BitSequence *data, DataLength databitlen)
+HashReturn update_luffa(hashState_luffa *state, const BitSequence *data, DataLength databitlen)
 {
     HashReturn ret=SUCCESS;
-
-    switch(state->hashbitlen) {
-        case 224:
-        case 256:
-            Update256(state, data, databitlen);
-            break;
-        case 384:
-            Update384(state, data, databitlen);
-            break;
-        case 512:
-            Update512(state, data, databitlen);
-            break;
-        default:
-            ret = BAD_HASHBITLEN;
-            break;
-    }
-
+    int i;
+    uint8 *p = (uint8*)state->buffer;
+	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
+	rnd512(state); 
+	data += MSG_BLOCK_BYTE_LEN; 
+	state->rembitlen = 0;
+	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
+	rnd512(state); 
+	data += MSG_BLOCK_BYTE_LEN; 
+	memset(p+1, 0, 31*sizeof(uint8));
+	p[0] = 0x80;
+	for (i=0;i<8;i++) state->buffer[i] = BYTES_SWAP32(state->buffer[i]);
+    rnd512(state);
     return ret;
 }
+   
 
-static void Update256(hashState *state, const BitSequence *data, DataLength databitlen) 
+HashReturn final_luffa(hashState_luffa *state, BitSequence *hashval) 
 {
-    uint32 cpylen;
-    uint32 len;
-    int i;
-    uint8 *p = (uint8*)state->buffer;
 
-    state->bitlen[0] += databitlen;
-
-    if (state->rembitlen + databitlen >= MSG_BLOCK_BIT_LEN) {
-        cpylen = MSG_BLOCK_BYTE_LEN - (state->rembitlen >> 3);
-
-        if (!state->rembitlen) {
-            for (i=0;i<8;i++) {
-                state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
-            }
-        } else {
-            for (i=0;i<cpylen;i++) {
-                ((uint8 *)state->buffer)[(state->rembitlen >> 3) + i] = data[i];
-            }
-            BYTES_SWAP256(state->buffer);
-        }
-
-        rnd256(state);
-
-        databitlen -= (cpylen << 3);
-        data += cpylen;
-        state->rembitlen = 0;
-
-        while (databitlen >= MSG_BLOCK_BIT_LEN) {
-            for (i=0;i<8;i++) {
-                state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
-            }
-
-            rnd256(state);
-
-            databitlen -= MSG_BLOCK_BIT_LEN;
-            data += MSG_BLOCK_BYTE_LEN;
-        }
-    }
-
-    /* All remaining data copy to buffer */
-    if (databitlen) {
-        len = databitlen >> 3;
-        if (databitlen % 8 != 0) {
-            len += 1;
-        }
-
-        for (i=0;i<len;i++) {
-            p[state->rembitlen/8+i] = data[i];
-        }
-        state->rembitlen += databitlen;
-    }
-
-    return;
-}
-
-static void Update384(hashState *state, const BitSequence *data, DataLength databitlen) 
-{
-    uint32 cpylen;
-    uint32 len;
-    int i;
-    uint8 *p = (uint8*)state->buffer;
-
-    if((state->bitlen[1] += databitlen)<databitlen) {
-        state->bitlen[0] += 1;
-    }
-
-    if (state->rembitlen + databitlen >= MSG_BLOCK_BIT_LEN) {
-        cpylen = MSG_BLOCK_BYTE_LEN - (state->rembitlen >> 3);
-
-        if(!state->rembitlen) {
-            for (i=0;i<8;i++) {
-                state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
-            }
-        } else {
-            for (i=0;i<cpylen;i++) {
-                ((uint8 *)state->buffer)[(state->rembitlen >> 3) + i] = data[i];
-            }
-            BYTES_SWAP256(state->buffer);
-        }
-
-        rnd384(state);
-
-        databitlen -= (cpylen << 3);
-        data += cpylen;
-        state->rembitlen = 0;
-
-        while (databitlen >= MSG_BLOCK_BIT_LEN) {
-            for (i=0;i<8;i++) {
-                state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
-            }
-
-            rnd384(state);
-
-            databitlen -= MSG_BLOCK_BIT_LEN;
-            data += MSG_BLOCK_BYTE_LEN;
-        }
-    }
-
-    /* All remaining data copy to buffer */
-    if (databitlen) {
-        len = databitlen >> 3;
-        if (databitlen % 8 != 0) {
-            len += 1;
-        }
-
-        for (i=0;i<len;i++) {
-            p[state->rembitlen / 8 + i] = data[i];
-        }
-        state->rembitlen += databitlen;
-    }
-
-    return;
-}
-
-static void Update512(hashState *state, const BitSequence *data, DataLength databitlen) 
-{
-    uint32 cpylen;
-    uint32 len;
-    int i;
-    uint8 *p = (uint8*)state->buffer;
-
-    if ((state->bitlen[1] += databitlen) < databitlen) {
-        state->bitlen[0] += 1;
-    }
-
-    if (state->rembitlen + databitlen >= MSG_BLOCK_BIT_LEN) {
-        cpylen = MSG_BLOCK_BYTE_LEN - (state->rembitlen >> 3);
-
-        if(!state->rembitlen) {
-            for (i=0;i<8;i++) {
-                state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
-            }
-        } else {
-            for (i=0; i<cpylen; i++) {
-                ((uint8 *)state->buffer)[(state->rembitlen >> 3) + i] = data[i];
-            }
-            BYTES_SWAP256(state->buffer);
-        }
-
-        rnd512(state);
-
-        databitlen -= (cpylen << 3);
-        data += cpylen;
-        state->rembitlen = 0;
-
-        while (databitlen >= MSG_BLOCK_BIT_LEN) {
-            for (i=0;i<8;i++) {
-                state->buffer[i] = BYTES_SWAP32(((uint32*)data)[i]);
-            }
-
-            rnd512(state);
-
-            databitlen -= MSG_BLOCK_BIT_LEN;
-            data += MSG_BLOCK_BYTE_LEN;
-        }
-    }
-
-    /* All remaining data copy to buffer */
-    if (databitlen) {
-        len = databitlen >> 3;
-        if (databitlen % 8 != 0) {
-            len += 1;
-        }
-
-        for(i=0;i<len;i++) {
-            p[state->rembitlen / 8 + i] = data[i];
-        }
-        state->rembitlen += databitlen;
-    }
-
-    return;
-}
-
-HashReturn final_luffa(hashState *state, BitSequence *hashval) 
-{
-    HashReturn ret;
-
-    switch(state->hashbitlen) {
-        case 224:
-            process_last_msgs256(state);
-            finalization224(state, (uint32*) hashval);
-            ret = SUCCESS;
-            break;
-        case 256:
-            process_last_msgs256(state);
-            finalization256(state, (uint32*) hashval);
-            ret = SUCCESS;
-            break;
-        case 384:
-            process_last_msgs384(state);
-            finalization384(state, (uint32*) hashval);
-            ret = SUCCESS;
-            break;
-        case 512:
-            process_last_msgs512(state);
-            finalization512(state, (uint32*) hashval);
-            ret = SUCCESS;
-            break;
-
-        default:
-            ret = BAD_HASHBITLEN;
-            break;
-    }
-
-    return ret;
+    finalization512(state, (uint32*) hashval);
+  
+    return SUCCESS;
 }
 
 /***************************************************/
 /* Round function         */
 /* state: hash context    */
-static void rnd256(hashState *state)
-{
-    __m128i t[2];
-    __m128i chainv[6];
-    __m128i x[8];
-    __m128i msg[2];
-    __m128i tmp[2];
-    int i;
 
-    chainv[0] = _mm_load_si128(&state->chainv[0]);
-    chainv[1] = _mm_load_si128(&state->chainv[1]);
-    chainv[2] = _mm_load_si128(&state->chainv[2]);
-    chainv[3] = _mm_load_si128(&state->chainv[3]);
-    chainv[4] = _mm_load_si128(&state->chainv[4]);
-    chainv[5] = _mm_load_si128(&state->chainv[5]);
 
-    t[0] = _mm_load_si128(&chainv[0]);
-    t[1] = _mm_load_si128(&chainv[1]);
-    t[0] = _mm_xor_si128(t[0], chainv[2]);
-    t[1] = _mm_xor_si128(t[1], chainv[3]);
-    t[0] = _mm_xor_si128(t[0], chainv[4]);
-    t[1] = _mm_xor_si128(t[1], chainv[5]);
-
-    MULT2(t[0],t[1],tmp[0],tmp[1]);
-
-    msg[0] = _mm_loadu_si128((__m128i*)&state->buffer[0]);
-    msg[1] = _mm_loadu_si128((__m128i*)&state->buffer[4]);
-    msg[0] = _mm_shuffle_epi32(msg[0], 27);
-    msg[1] = _mm_shuffle_epi32(msg[1], 27);
-
-    for (i=0;i<3;i++) {
-        chainv[i*2] = _mm_xor_si128(chainv[i*2], t[0]);
-        chainv[1+i*2] = _mm_xor_si128(chainv[1+i*2], t[1]);
-
-        chainv[i*2] = _mm_xor_si128(chainv[i*2], msg[0]);
-        chainv[1+i*2] = _mm_xor_si128(chainv[1+i*2], msg[1]);
-
-        MULT2(msg[0],msg[1],tmp[0],tmp[1]);
-    }
-
-    /* Tweak() */
-    t[0] = _mm_slli_epi32(chainv[3], 1); 
-    t[1] = _mm_srli_epi32(chainv[3], 31); 
-    chainv[3] = _mm_or_si128(t[0], t[1]);
-    t[0] = _mm_slli_epi32(chainv[5], 2); 
-    t[1] = _mm_srli_epi32(chainv[5], 30); 
-    chainv[5] = _mm_or_si128(t[0], t[1]);
-
-    NMLTOM768(chainv[0],chainv[2],chainv[4],x[2],x[1],x[0],x[3],
-            chainv[1],chainv[3],chainv[5],x[6],x[5],x[4],x[7]);
-
-    for (i=0;i<8;i++) {
-        STEP_PART(&x[0],&CNS128[i*2],&tmp[0]);
-    }
-
-    MIXTON768(x[3],x[2],x[1],x[0],chainv[4],chainv[2],chainv[0],
-            x[7],x[6],x[5],x[4],chainv[5],chainv[3],chainv[1]);
-
-    state->chainv[0] = _mm_load_si128(&chainv[0]);
-    state->chainv[1] = _mm_load_si128(&chainv[1]);
-    state->chainv[2] = _mm_load_si128(&chainv[2]);
-    state->chainv[3] = _mm_load_si128(&chainv[3]);
-    state->chainv[4] = _mm_load_si128(&chainv[4]);
-    state->chainv[5] = _mm_load_si128(&chainv[5]);
-
-    return;
-}
-
-static void rnd384(hashState *state)
-{
-    __m128i t[2];
-    __m128i chainv[8];
-    __m128i msg[2];
-    __m128i tmp[2];
-    __m128i x[8];
-    int i;
-
-    chainv[0] = _mm_load_si128(&state->chainv[0]);
-    chainv[1] = _mm_load_si128(&state->chainv[1]);
-    chainv[2] = _mm_load_si128(&state->chainv[2]);
-    chainv[3] = _mm_load_si128(&state->chainv[3]);
-    chainv[4] = _mm_load_si128(&state->chainv[4]);
-    chainv[5] = _mm_load_si128(&state->chainv[5]);
-    chainv[6] = _mm_load_si128(&state->chainv[6]);
-    chainv[7] = _mm_load_si128(&state->chainv[7]);
-
-    t[0] = _mm_load_si128(&chainv[0]);
-    t[1] = _mm_load_si128(&chainv[1]);
-    t[0] = _mm_xor_si128(t[0], chainv[2]);
-    t[1] = _mm_xor_si128(t[1], chainv[3]);
-    t[0] = _mm_xor_si128(t[0], chainv[4]);
-    t[1] = _mm_xor_si128(t[1], chainv[5]);
-    t[0] = _mm_xor_si128(t[0], chainv[6]);
-    t[1] = _mm_xor_si128(t[1], chainv[7]);
-
-    MULT2(t[0],t[1],tmp[0],tmp[1]);
-
-    msg[0] = _mm_loadu_si128 ((__m128i*)&state->buffer[0]);
-    msg[1] = _mm_loadu_si128 ((__m128i*)&state->buffer[4]);
-    msg[0] = _mm_shuffle_epi32(msg[0], 27);
-    msg[1] = _mm_shuffle_epi32(msg[1], 27);
-
-    for (i=0;i<4;i++){
-        chainv[i*2] = _mm_xor_si128(chainv[i*2], t[0]);
-        chainv[1+i*2] = _mm_xor_si128(chainv[1+i*2], t[1]);
-    }
-
-    t[0] = _mm_load_si128(&chainv[6]);
-    t[1] = _mm_load_si128(&chainv[7]);
-
-    MULT2(chainv[6],chainv[7],tmp[0],tmp[1]);
-    chainv[6] = _mm_xor_si128(chainv[6], chainv[4]);
-    chainv[7] = _mm_xor_si128(chainv[7], chainv[5]);
-
-    MULT2(chainv[4],chainv[5],tmp[0],tmp[1]);
-    chainv[4] = _mm_xor_si128(chainv[4], chainv[2]);
-    chainv[5] = _mm_xor_si128(chainv[5], chainv[3]);
-
-    MULT2(chainv[2],chainv[3],tmp[0],tmp[1]);
-    chainv[2] = _mm_xor_si128(chainv[2], chainv[0]);
-    chainv[3] = _mm_xor_si128(chainv[3], chainv[1]);
-
-    MULT2(chainv[0],chainv[1],tmp[0],tmp[1]);
-    chainv[0] = _mm_xor_si128(chainv[0], t[0]);
-    chainv[1] = _mm_xor_si128(chainv[1], t[1]);
-
-    for (i=0;i<4;i++){
-        chainv[i*2] = _mm_xor_si128(chainv[i*2], msg[0]);
-        chainv[1+i*2] = _mm_xor_si128(chainv[1+i*2], msg[1]);
-
-        MULT2(msg[0],msg[1],tmp[0],tmp[1]);
-    }
-
-    /* Tweak() */
-    t[0] = _mm_slli_epi32(chainv[3], 1); 
-    t[1] = _mm_srli_epi32(chainv[3], 31); 
-    chainv[3] = _mm_or_si128(t[0], t[1]);
-    t[0] = _mm_slli_epi32(chainv[5], 2); 
-    t[1] = _mm_srli_epi32(chainv[5], 30); 
-    chainv[5] = _mm_or_si128(t[0], t[1]);
-    t[0] = _mm_slli_epi32(chainv[7], 3); 
-    t[1] = _mm_srli_epi32(chainv[7], 29); 
-    chainv[7] = _mm_or_si128(t[0], t[1]);
-
-    NMLTOM1024(chainv[0],chainv[2],chainv[4],chainv[6], x[0],x[1],x[2],x[3],
-            chainv[1],chainv[3],chainv[5],chainv[7], x[4],x[5],x[6],x[7]);
-
-    for(i=0;i<8;i++) {
-        STEP_PART(&x[0],&CNS128[i*2],&tmp[0]);
-    }
-
-    MIXTON1024(x[0],x[1],x[2],x[3], chainv[0],chainv[2],chainv[4],chainv[6],
-            x[4],x[5],x[6],x[7], chainv[1],chainv[3],chainv[5],chainv[7]);
-
-    state->chainv[0] = _mm_load_si128(&chainv[0]);
-    state->chainv[1] = _mm_load_si128(&chainv[1]);
-    state->chainv[2] = _mm_load_si128(&chainv[2]);
-    state->chainv[3] = _mm_load_si128(&chainv[3]);
-    state->chainv[4] = _mm_load_si128(&chainv[4]);
-    state->chainv[5] = _mm_load_si128(&chainv[5]);
-    state->chainv[6] = _mm_load_si128(&chainv[6]);
-    state->chainv[7] = _mm_load_si128(&chainv[7]);
-
-    return;
-}
-
-static void rnd512(hashState *state)
+static void rnd512(hashState_luffa *state)
 {
     __m128i t[2];
     __m128i chainv[10];
@@ -894,114 +474,15 @@ static void rnd512(hashState *state)
 /* Finalization function  */
 /* state: hash context    */
 /* b[8]: hash values      */
-void finalization224(hashState *state, uint32 *b)
+
+static void finalization512(hashState_luffa *state, uint32 *b)
 {
     __m128i t[2];
     uint32 hash[8];
     int i;
 
     /*---- blank round with m=0 ----*/
-    for (i=0;i<8;i++) state->buffer[i] = 0;
-    rnd256(state);
-
-    t[0] = _mm_load_si128(&state->chainv[0]);
-    t[1] = _mm_load_si128(&state->chainv[1]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[2]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[3]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[4]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[5]);
-
-    t[0] = _mm_shuffle_epi32(t[0], 27);
-    t[1] = _mm_shuffle_epi32(t[1], 27);
-
-    _mm_storeu_si128((__m128i*)&hash[0], t[0]);
-    _mm_storeu_si128((__m128i*)&hash[4], t[1]);
-
-    for (i=0;i<7;i++) b[i] = BYTES_SWAP32(hash[i]);
-
-    return;
-}
-
-static void finalization256(hashState *state, uint32 *b)
-{
-    __m128i t[2];
-    uint32 hash[8];
-    int i;
-
-    /*---- blank round with m=0 ----*/
-    for (i=0;i<8;i++) state->buffer[i] = 0;
-    rnd256(state);
-
-    t[0] = _mm_load_si128(&state->chainv[0]);
-    t[1] = _mm_load_si128(&state->chainv[1]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[2]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[3]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[4]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[5]);
-
-    t[0] = _mm_shuffle_epi32(t[0], 27);
-    t[1] = _mm_shuffle_epi32(t[1], 27);
-
-    _mm_storeu_si128((__m128i*)&hash[0], t[0]);
-    _mm_storeu_si128((__m128i*)&hash[4], t[1]);
-
-    for (i=0;i<8;i++) b[i] = BYTES_SWAP32(hash[i]);
-
-    return;
-}
-
-static void finalization384(hashState *state, uint32 *b)
-{
-    __m128i t[2];
-    uint32 hash[8];
-    int i;
-
-    /*---- blank round with m=0 ----*/
-    for (i=0;i<8;i++) state->buffer[i] = 0;
-    rnd384(state);
-
-    t[0] = _mm_load_si128(&state->chainv[0]);
-    t[1] = _mm_load_si128(&state->chainv[1]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[2]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[3]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[4]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[5]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[6]);
-    t[1] = _mm_xor_si128(t[1], state->chainv[7]);
-
-    t[0] = _mm_shuffle_epi32(t[0], 27);
-    t[1] = _mm_shuffle_epi32(t[1], 27);
-
-    _mm_storeu_si128((__m128i*)&hash[0], t[0]);
-    _mm_storeu_si128((__m128i*)&hash[4], t[1]);
-
-    for (i=0;i<8;i++) b[i] = BYTES_SWAP32(hash[i]);
-
-    for (i=0;i<8;i++) state->buffer[i] = 0;
-    rnd384(state);
-
-    t[0] = _mm_load_si128(&state->chainv[0]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[2]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[4]);
-    t[0] = _mm_xor_si128(t[0], state->chainv[6]);
-
-    t[0] = _mm_shuffle_epi32(t[0], 27);
-
-    _mm_storeu_si128((__m128i*)&hash[0], t[0]);
-
-    for (i=0;i<4;i++) b[8+i] = BYTES_SWAP32(hash[i]);
-
-    return;
-}
-
-static void finalization512(hashState *state, uint32 *b)
-{
-    __m128i t[2];
-    uint32 hash[8];
-    int i;
-
-    /*---- blank round with m=0 ----*/
-    for (i=0;i<8;i++) state->buffer[i] = 0;
+    memset(state->buffer, 0, sizeof state->buffer );
     rnd512(state);
 
     t[0] = _mm_load_si128(&state->chainv[0]);
@@ -1023,7 +504,7 @@ static void finalization512(hashState *state, uint32 *b)
 
     for (i=0;i<8;i++) b[i] = BYTES_SWAP32(hash[i]);
 
-    for (i=0;i<8;i++) state->buffer[i] = 0;
+    memset(state->buffer, 0, sizeof state->buffer );
     rnd512(state);
 
     t[0] = _mm_load_si128(&state->chainv[0]);
@@ -1048,97 +529,8 @@ static void finalization512(hashState *state, uint32 *b)
     return;
 }
 
-/***************************************************/
-/* Process of the last blocks */
-/* state: hash context        */
-static void process_last_msgs256(hashState *state)
-{
-    uint32 tail_len;
-    int i = 0;
 
-    tail_len = ((uint32) state->bitlen[0]) % MSG_BLOCK_BIT_LEN;
 
-    i = tail_len / 8;
 
-    if (!(tail_len % 8)) {
-        ((uint8*)state->buffer)[i] = 0x80;
-    } else {
-        ((uint8*)state->buffer)[i] &= (0xff << (8 - (tail_len % 8)));
-        ((uint8*)state->buffer)[i] |= (0x80 >> (tail_len % 8));
-    }
-
-    i++;
-
-    for (;i<32;i++) ((uint8*)state->buffer)[i] = 0;
-
-    for (i=0;i<8;i++) {
-        state->buffer[i] = BYTES_SWAP32(state->buffer[i]);
-    }
-    rnd256(state);
-
-    return;
-}
-
-static void process_last_msgs384(hashState *state)
-{
-    uint32 tail_len;
-    int i = 0;
-
-    tail_len = ((uint32) state->bitlen[1]) % MSG_BLOCK_BIT_LEN;
-
-    i = tail_len / 8;
-
-    if (!(tail_len % 8)) {
-        ((uint8*)state->buffer)[i] = 0x80;
-    } else {
-        ((uint8*)state->buffer)[i] &= (0xff << (8 -(tail_len % 8)));
-        ((uint8*)state->buffer)[i] |= (0x80 >> (tail_len % 8));
-    }
-
-    i++;
-
-    for (;i<32;i++) ((uint8*)state->buffer)[i] = 0;
-
-    for (i=0;i<8;i++) {
-        state->buffer[i] = BYTES_SWAP32(state->buffer[i]);
-    }
-    rnd384(state);
-
-    return;
-}
-
-static void process_last_msgs512(hashState *state)
-{
-    uint32 tail_len;
-    int i = 0;
-
-    tail_len = ((uint32) state->bitlen[1]) % MSG_BLOCK_BIT_LEN;
-
-    i = tail_len / 8;
-
-    if (!(tail_len % 8)) {
-        ((uint8*)state->buffer)[i] = 0x80;
-    } else {
-        ((uint8*)state->buffer)[i] &= (0xff << (8 - (tail_len % 8)));
-        ((uint8*)state->buffer)[i] |= (0x80 >> (tail_len % 8));
-    }
-
-    i++;
-
-    for (;i<32;i++) ((uint8*)state->buffer)[i] = 0;
-
-    for (i=0;i<8;i++) {
-        state->buffer[i] = BYTES_SWAP32(state->buffer[i]);
-    }
-    rnd512(state);
-
-    return;
-}
-
-int luffa_hash(unsigned char *out, const unsigned char *in, unsigned long long inlen)
-{
-	if (hash_luffa(64 * 8,in,inlen * 8,out) == SUCCESS) return 0;
-	return -1;
-}
 
 /***************************************************/

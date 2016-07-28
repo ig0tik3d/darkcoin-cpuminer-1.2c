@@ -131,6 +131,7 @@ bool use_syslog = false;
 static bool opt_background = false;
 static bool opt_quiet = false;
 static int opt_retries = -1;
+static int opt_stop_after;
 static int opt_fail_pause = 30;
 int opt_timeout = 270;
 int opt_scantime = 5;
@@ -185,7 +186,7 @@ Options:\n\
   -x, --proxy=[PROTOCOL://]HOST[:PORT]  connect through a proxy\n\
   -t, --threads=N       number of miner threads (default: number of processors)\n\
   -r, --retries=N       number of times to retry if a network call fails\n\
-                          (default: retry indefinitely)\n\
+  -X, --stop-after=N    stop mining after N successful blocks\n\
   -R, --retry-pause=N   time to pause between retries, in seconds (default: 30)\n\
   -T, --timeout=N       network timeout, in seconds (default: 270)\n\
   -s, --scantime=N      upper bound on time spent scanning current work when\n\
@@ -218,7 +219,7 @@ static char const short_options[] =
 #ifdef HAVE_SYSLOG_H
 	"S"
 #endif
-	"a:c:DHhp:Px:qr:R:s:t:T:o:u:O:V";
+	"a:c:DHhp:PxX:qr:R:s:t:T:o:u:O:V";
 
 static struct option const options[] = {
 	{ "algo", 1, NULL, 'a' },
@@ -233,6 +234,7 @@ static struct option const options[] = {
 	{ "help", 0, NULL, 'h' },
 	{ "no-longpoll", 0, NULL, 1003 },
 	{ "no-stratum", 0, NULL, 1007 },
+	{ "stop-after", 1, NULL, 'X' },
 	{ "pass", 1, NULL, 'p' },
 	{ "protocol-dump", 0, NULL, 'P' },
 	{ "proxy", 1, NULL, 'x' },
@@ -334,6 +336,11 @@ static void share_result(int result, const char *reason)
 
 	if ((opt_debug || opt_hashdebug) && reason)
 		applog(LOG_DEBUG, "DEBUG: reject reason: %s", reason);
+
+	if (opt_stop_after && accepted_count == opt_stop_after) {
+		applog(LOG_INFO, "Successfully mined %d blocks, exiting.", accepted_count);
+		exit(0);
+	}
 }
 
 static bool submit_upstream_work(CURL *curl, struct work *work)
@@ -1117,6 +1124,12 @@ static void parse_arg (int key, char *arg)
 		if (v < 1 || v > 9999)	/* sanity check */
 			show_usage_and_exit(1);
 		opt_scantime = v;
+		break;
+	case 'X':
+		v = atoi(arg);
+		if (v < 1 || v > 9999)	/* sanity check */
+			show_usage_and_exit(1);
+		opt_stop_after = v;
 		break;
 	case 'T':
 		v = atoi(arg);
